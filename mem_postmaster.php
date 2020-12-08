@@ -2804,7 +2804,7 @@ end_mime;
 
     // overwrite default headers with new headers:
 
-    $sep = (!is_windows()) ? "\n" : "\r\n";
+    $sep = (!IS_WIN) ? "\n" : "\r\n";
     $headers = "From: $listAdminEmail".
                    $sep.'X-Mailer: Textpattern/Postmaster'.
                    $sep.'MIME-Version: 1.0'.
