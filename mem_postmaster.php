@@ -178,14 +178,12 @@ console.log(path);
 EOL;
 
     // for 4.0.4
-
     if (is_callable('dom_attach')) {
         echo dom_attach('supporting_content', $line, $line, 'div');
         return;
     }
 
     // for 4.0.3 and earlier
-
     $line = addcslashes($line, "\r\n\"\'");
 
     echo $js = <<<eof
@@ -226,13 +224,11 @@ function bab_postmaster($evt, $stp='')
     pagetop('Postmaster','');
 
     // define the users table names (with prefix)
-
     $bab_pm_PrefsTable = safe_pfx('bab_pm_list_prefs');
     $bab_pm_SubscribersTable = safe_pfx('bab_pm_subscribers');
 
 
     // set up script for hiding add sections
-
     echo $jshas = <<<jshas
 <script type="text/javascript">
 $(document).ready(function(){
@@ -368,6 +364,7 @@ function bab_pm_makeform()
         } else {
             $subscriber_lists = array();
         }
+
         $lists = safe_rows('*', 'bab_pm_list_prefs', '1=1 order by listName');
     }
 
@@ -470,6 +467,7 @@ function bab_pm_formsend()
     $bab_pm_SubscribersTable = safe_pfx('bab_pm_subscribers');
 
     $bab_pm_radio = ps('bab_pm_radio'); // this is whether to mail or not, or test
+
     if ($bab_pm_radio == 'Send to Test') {
         $bab_pm_radio = 2;
     }
@@ -493,6 +491,7 @@ function bab_pm_formsend()
         //time to fire off initialize
         // bab_pm_initialize_mail();
         $path = "?event=postmaster&step=initialize_mail&radio=$bab_pm_radio&list=$listToEmail&artID=$artID";
+
         if (!empty($sendFrom)) {
             $path .= "&sendFrom=" . urlencode($sendFrom);
         }
@@ -568,7 +567,6 @@ function bab_pm_subscribers()
         bab_pm_makeform();
     } else {
         // total subscribers
-
         $lvars = array('page','sort','dir','crit','method');
         extract(gpsa($lvars));
 
@@ -681,6 +679,7 @@ EOSQL;
                 extract(doSpecial($a));
 
                 $modbox = fInput('checkbox','selected[]',$subscriberID,'','','','','','subscriberid_'. $subscriberID);
+
                 if (empty($subscriberFirstName) && empty($subscriberLastName)) {
                     $subscriberFirstName = '(empty)';
                 }
@@ -728,8 +727,8 @@ EOSQL;
 
         echo '</fieldset>';
         echo '<fieldset><legend>Search Results</legend>' . @$search_results . '</fieldset>';
-    } // end if/else
-} // end bab_pm_subscribers
+    }
+}
 
 // ----------------------------------------------------------------------------
 // "Admin > Postmaster > Lists" tab
@@ -825,12 +824,11 @@ function bab_pm_lists()
         }
 
         echo '</fieldset>';
-    } // end if/else
-} // end bab_pm_listlist
+    }
+}
 
 // ----------------------------------------------------------------------------
 // "Admin > Postmaster > Import/Export" tab
-
 function bab_pm_importexport()
 {
     echo '<fieldset id="bab_pm_add-subscriber"><legend><span class="bab_pm_underhed">Import Subscribers</span></legend>'
@@ -948,7 +946,7 @@ function bab_pm_import()
                     // failed to insert subscriber
                 }
             }
-        } // end while
+        }
 
         $skip_count = count($skipped);
 
@@ -1240,7 +1238,7 @@ eop_form;
 
     // send all our initialized to bab_pm_bulk_mail
     bab_pm_bulk_mail($bab_pm_total, $bab_pm_radio, $subject, @$thisarticle, $template); // send all info to mail through function
-} // end initialize
+}
 
 // ----------------------------------------------------------------------------
 // Mail
@@ -1277,7 +1275,7 @@ function bab_pm_bulk_mail($bab_pm_total, $bab_pm_radio, $subject, $thisarticle, 
 
     $unsubscribe_url = trim($prefs[_bab_prefix_key('default_unsubscribe_url')]);
 
-    if (empty($unsubscribe_url)){
+    if (empty($unsubscribe_url)) {
         $unsubscribe_url = trim($row['listUnsubscribeUrl']);
     }
 
@@ -1454,6 +1452,7 @@ status_report;
             }
 
             $i++; // ---- update internal counter
+
             // mark address as "mailed"
             $result = safe_update('bab_pm_subscribers', "flag = 'mailed'", "subscriberEmail='".doSlash($subscriberEmail)."'");
 
@@ -1461,7 +1460,7 @@ status_report;
         } else {
             break;
         }
-    } // end foreach
+    }
 
     if ($bab_pm_radio == 1) {
         $email_batch_delay = $prefs[_bab_prefix_key('email_batch_delay')];
@@ -1472,6 +1471,7 @@ status_report;
 
         header("Cache-Control: no-store");
         header("Refresh: ".$email_batch_delay.";");
+
         exit;
     }
 
@@ -1497,7 +1497,6 @@ layout;
 
 // ----------------------------------------------------------------------------
 // com_connect
-
 function bab_pm_channels($atts, $thing = null)
 {
     global $bab_pm_channel;
@@ -1752,23 +1751,23 @@ function bab_pm_comconnect_submit()
 
 // ----------------------------------------------------------------------------
 // ZCR form, date input
-
 function bab_pm_time($atts)
 {
     $today = date("F j, Y, g:i a");
+
     extract(lAtts(array(
         'custom_field' => '',
-    ),$atts));
+    ), $atts));
 
 $form_line = <<<yawp
 <input type="hidden" name="$custom_field" value="$today" >
 yawp;
+
     return $form_line;
 }
 
 // ----------------------------------------------------------------------------
 // email on post -- this is called after you click "Save"
-
 function bab_pm_eop($evt, $stp)
 {
     $bab_pm_PrefsTable = safe_pfx('bab_pm_list_prefs');
@@ -1784,6 +1783,7 @@ function bab_pm_eop($evt, $stp)
         $result = safe_query("UPDATE $bab_pm_SubscribersTable SET flag = NULL");
 
         $path = "?event=postmaster&step=initialize_mail&radio=$bab_pm_radio&list=$listToEmail&artID=$artID";
+
         if (!empty($sendFrom)) {
             $path .= '&sendFrom='.urlencode($sendFrom);
         }
@@ -1793,11 +1793,10 @@ function bab_pm_eop($evt, $stp)
         header("Location: ".$path);
         header("Connection: close");
     }
-} // end bab_pm_eop
+}
 
 // ----------------------------------------------------------------------------
 // the ifs (if the delete button is clicked, etc)
-
 function bab_pm_ifs()
 {
     $bab_pm_PrefsTable = safe_pfx('bab_pm_list_prefs');
@@ -1875,12 +1874,12 @@ function bab_pm_ifs()
                     safe_delete('bab_pm_subscribers', "subscriberID = $sid");
                     // delete subscriber list map
                     safe_delete('bab_pm_subscribers_list', "subscriber_id = $sid");
-                } else if ($method == 'add_to_list') {
+                } elseif ($method == 'add_to_list') {
                     // ignore error. It'll most likely be from unique constraint
                     @safe_insert('bab_pm_subscribers_list', "subscriber_id = $sid, list_id = $list_id");
-                } else if ($method == 'remove_from_list') {
+                } elseif ($method == 'remove_from_list') {
                     safe_delete('bab_pm_subscribers_list', "subscriber_id = $sid AND list_id = $list_id");
-                } else if ($method == 'delete_lists' || $method == 'remove_all_from_list') {
+                } elseif ($method == 'delete_lists' || $method == 'remove_all_from_list') {
                     // unsubscribe all from list
                     safe_delete('bab_pm_subscribers_list', "list_id = $sid");
 
@@ -1888,7 +1887,7 @@ function bab_pm_ifs()
                         // remove list
                         safe_delete('bab_pm_list_prefs', "listID = $sid");
                     }
-                } else if ($method == 'add_all_to_list') {
+                } elseif ($method == 'add_all_to_list') {
                     // remove all subs for list to prevent constraint violation
                     safe_delete('bab_pm_subscribers_list', "list_id = $sid");
                     // add everyone to list
@@ -1947,33 +1946,32 @@ function bab_pm_ifs()
     }
 
     // if the "edit list" button has been clicked
-
     if (ps('editListName') or ps('editListDescription') or ps('editListAdminEmail') or ps('editListUnsubscribeUrl') or ps('editListEmailForm') or ps('editListSubjectLine')) {
         $editListArray = array(doSlash(ps('editListName')), doSlash(ps('editListDescription')), doSlash(ps('editListAdminEmail')), doSlash(ps('editListUnsubscribeUrl')), doSlash(ps('editListEmailForm')), doSlash(ps('editListID')), doslash(ps('editListSubjectLine')));
+
         $strSQL = safe_query("update $bab_pm_PrefsTable set
 listName='$editListArray[0]', listDescription='$editListArray[1]', listAdminEmail='$editListArray[2]', listUnsubscribeUrl='$editListArray[3]', listEmailForm='$editListArray[4]', listSubjectLine='$editListArray[6]' where listID=$editListArray[5]");
-$alert = bab_pm_preferences('list_edit');
+        $alert = bab_pm_preferences('list_edit');
+
         echo "<div class=bab_pm_alerts>$alert</div>";
     }
 }
+
 function bab_pm_styles()
 {
-
     $css_encoded = safe_field('css', 'txp_css', "name LIKE 'mem_postmaster'");
 
-    if ($css_encoded)
-    {
+    if ($css_encoded) {
         $css = base64_decode($css_encoded);
 
-        if ($css === false)
+        if ($css === false) {
             $css = $css_encoded;
+        }
 
         echo n . '<style type="text/css">' . n
             . $css
             . n . '</style>' . n;
-    }
-    else
-    {
+    } else {
         echo $bab_pm_styles = <<<bab_pm_styles
 <style type="text/css">
 #bab_pm_master {
@@ -2075,8 +2073,8 @@ function bab_pm_poweredit()
     $lists = safe_rows('listID, listName', 'bab_pm_list_prefs', '1 order by listName');
 
     $list_options = '';
-    foreach ($lists as $l)
-    {
+
+    foreach ($lists as $l) {
         $list_options .= '<option value="'.doSlash($l['listID']).'">'.htmlspecialchars($l['listName']).'</option>';
     }
 
@@ -2090,8 +2088,7 @@ function bab_pm_poweredit()
             // Add another chunk of HTML
             var pjs = document.getElementById('js');
 
-            if (pjs == null)
-            {
+            if (pjs == null) {
                 var br = document.createElement('br');
                 elm.parentNode.appendChild(br);
 
@@ -2100,13 +2097,11 @@ function bab_pm_poweredit()
                 elm.parentNode.appendChild(pjs);
             }
 
-            if (pjs.style.display == 'none' || pjs.style.display == '')
-            {
+            if (pjs.style.display == 'none' || pjs.style.display == '') {
                 pjs.style.display = 'block';
             }
 
-            switch (something)
-            {
+            switch (something) {
                 case 'add_to_list':
                 case 'remove_from_list':
                     var lists = '<select name=\"selected_list_id\" class=\"list\">{$list_options}</select>';
@@ -2128,6 +2123,7 @@ EOJS;
 #   Strings for internationalisation...
 #===========================================================================
 global $_bab_pm_l18n;
+
 $_bab_pm_l18n = array(
     'bab_pm'                => 'Postmaster plugin',
     # --- the following are used as labels for PM prefs...
@@ -2145,10 +2141,9 @@ $_bab_pm_l18n = array(
     'remove_from_list'  => 'Remove from List',
     'add_all_to_list'   => 'Add everyone to List',
     'remove_all_from_list'  => 'Remove everyone from List',
-    );
+);
 
-for ($i=1; $i <= BAB_CUSTOM_FIELD_COUNT; $i++)
-{
+for ($i = 1; $i <= BAB_CUSTOM_FIELD_COUNT; $i++) {
     $_bab_pm_l18n["subscriberCustom{$i}"] = "Custom field {$i} name";
 }
 
@@ -2156,40 +2151,46 @@ for ($i=1; $i <= BAB_CUSTOM_FIELD_COUNT; $i++)
 #   String support routines...
 #-------------------------------------------------------------------------------
 register_callback( 'bab_pm_enumerate_strings' , 'l10n.enumerate_strings' );
-function bab_pm_enumerate_strings($event , $step='' , $pre=0)
+function bab_pm_enumerate_strings($event , $step = '' , $pre = 0)
 {
     global $_bab_pm_l18n;
+
     $r = array  (
-                'owner'     => 'bab_pm',            #   Change to your plugin's name
-                'prefix'    => bab_pm_prefix,       #   Its unique string prefix
-                'lang'      => 'en-gb',             #   The language of the initial strings.
-                'event'     => 'public',            #   public/admin/common = which interface the strings will be loaded into
-                'strings'   => $_bab_pm_l18n,       #   The strings themselves.
-                );
+        'owner'     => 'bab_pm',            #   Change to your plugin's name
+        'prefix'    => bab_pm_prefix,       #   Its unique string prefix
+        'lang'      => 'en-gb',             #   The language of the initial strings.
+        'event'     => 'public',            #   public/admin/common = which interface the strings will be loaded into
+        'strings'   => $_bab_pm_l18n,       #   The strings themselves.
+    );
+
     return $r;
 }
+
 function bab_pm_gTxt($what,$args = array())
 {
     global $_bab_pm_l18n, $textarray;
+
     $key = strtolower( bab_pm_prefix . '-' . $what );
-    if (isset($textarray[$key]))
+
+    if (isset($textarray[$key])) {
         $str = $textarray[$key];
-    else
-    {
+    } else {
         $key = strtolower($what);
 
         if (isset($_bab_pm_l18n[$key])) {
             $str = $_bab_pm_l18n[$key];
-        } else if (isset($_bab_pm_l18n[$what])) {
+        } elseif (isset($_bab_pm_l18n[$what])) {
             $str = $_bab_pm_l18n[$what];
-        } else if (isset($textarray[$key])) {
+        } elseif (isset($textarray[$key])) {
             $str = $textarray[$key];
-        } else
+        } else {
             $str = $what;
+        }
     }
 
-    if( !empty($args) )
+    if (!empty($args)) {
         $str = strtr( $str , $args );
+    }
 
     return $str;
 }
@@ -2198,84 +2199,90 @@ function bab_pm_gTxt($what,$args = array())
 #   Plugin preferences...
 #===========================================================================
 global $_bab_pm_prefs;
-$_bab_pm_prefs = array
-    (
+
+$_bab_pm_prefs = array(
     'subscribers_per_page'    => array('type' => 'text_input', 'val' => '20', 'position' => 50) ,
     'emails_per_batch'        => array('type' => 'text_input', 'val' => '50', 'position' => 60) ,
     'email_batch_delay'       => array('type' => 'text_input', 'val' => '3', 'position' => 61) ,
     'form_select_prefix'      => array('type' => 'text_input', 'val' => 'newsletter-', 'position' => 70) ,
     'default_unsubscribe_url' => array('type' => 'text_input', 'val' => '', 'position' => 100),
-    );
+);
 
-for ($i=1; $i <= BAB_CUSTOM_FIELD_COUNT; $i++)
-{
+for ($i = 1; $i <= BAB_CUSTOM_FIELD_COUNT; $i++) {
     $_bab_pm_prefs["subscriberCustom{$i}"] = array('type' => 'text_input', 'val' => "Custom {$i}:", 'position' => $i + 19);
 }
 
 #-------------------------------------------------------------------------------
 #   Pref support routines...
 #-------------------------------------------------------------------------------
-if( @txpinterface === 'admin' )
-{
-    register_callback( '_bab_pm_handle_prefs_pre' , 'prefs' , 'advanced_prefs' , 1 );
-    register_callback( '_bab_pm_handle_prefs_pre' , 'prefs' , 'advanced_prefs_save' , 1 );
-    register_callback( '_bab_pm_handle_prefs_pre' , 'postmaster' , 'prefs' , 1 );
+if (txpinterface === 'admin') {
+    register_callback('_bab_pm_handle_prefs_pre', 'prefs', 'advanced_prefs', 1);
+    register_callback('_bab_pm_handle_prefs_pre', 'prefs', 'advanced_prefs_save', 1);
+    register_callback('_bab_pm_handle_prefs_pre', 'postmaster', 'prefs', 1);
 }
+
 function _bab_prefix_key($key)
 {
     return bab_pm_prefix.'-'.$key;
 }
-function _bab_pm_install_pref($key, $value, $type, $position=0)
-{
-    global $prefs , $textarray , $_bab_pm_l18n;
 
-    $k = _bab_prefix_key( $key );
-    if( !array_key_exists( $k , $prefs ) )
-    {
-        set_pref( $k , $value , bab_pm_prefix , 1 , $type , $position );
+function _bab_pm_install_pref($key, $value, $type, $position = 0)
+{
+    global $prefs, $textarray, $_bab_pm_l18n;
+
+    $k = _bab_prefix_key($key);
+
+    if (!array_key_exists($k, $prefs)) {
+        set_pref($k, $value, bab_pm_prefix, 1, $type, $position);
         $prefs[$k] = $value;
     }
+
     # Insert the preference strings for non-mlp sites...
     $k = strtolower($k);
-    if( !array_key_exists( $k , $textarray ) )
+
+    if (!array_key_exists($k , $textarray)) {
         $textarray[$k] = $_bab_pm_l18n[$key];
+    }
 }
+
 function _bab_pm_remove_prefs()
 {
-    safe_delete( 'txp_prefs' , "`event`='".bab_pm_prefix."'" );
+    safe_delete('txp_prefs', "`event`='".bab_pm_prefix."'");
 }
-function _bab_pm_handle_prefs_pre( $event , $step )
+
+function _bab_pm_handle_prefs_pre($event, $step)
 {
     global $prefs, $_bab_pm_prefs;
 
-    if (!empty($prefs['plugin_cache_dir']))
-        {
+    if (!empty($prefs['plugin_cache_dir'])) {
         $dir = rtrim($prefs['plugin_cache_dir'], DS) . DS;
+
         # in case it's a relative path
-        if (!is_dir($dir))
+        if (!is_dir($dir)) {
             $dir = rtrim(realpath(txpath.DS.$dir), DS) . DS;
-        $filename = $dir.'postmaster'.DS.'overrides.php';
-        if (is_file($filename))
-            {
-            #   Bring in the preference overrides from the file...
-            @include_once( $filename );
-            }
         }
 
-    if( version_compare( $prefs['version'] , '4.0.6' , '>=' ) )
-        {
-        foreach( $_bab_pm_prefs as $key=>$data )
-            _bab_pm_install_pref( $key , $data['val'] , $data['type'], $data['position'] );
+        $filename = $dir.'postmaster'.DS.'overrides.php';
+
+        if (is_file($filename)) {
+            # Bring in the preference overrides from the file...
+            @include_once( $filename );
         }
-    else
+    }
+
+    if (version_compare($prefs['version'], '4.0.6', '>=')) {
+        foreach ($_bab_pm_prefs as $key => $data) {
+            _bab_pm_install_pref($key, $data['val'], $data['type'], $data['position']);
+        }
+    } else {
         _bab_pm_remove_prefs();
+    }
 }
 
 
 function bab_pm_preferences($what)
 {
     $lang = array(
-
         // ---- subscriber-related preferences
 
         'subscriberFirstName'     => 'First Name:',
@@ -2323,9 +2330,10 @@ function bab_pm_preferences($what)
     );
 
     $result = @$lang[$what];
-    if( !$result )
-    {
+
+    if (!$result) {
         global $prefs;
+
         $key = _bab_prefix_key( $what );
         $result = get_pref($key, '');
     }
@@ -2335,12 +2343,15 @@ function bab_pm_preferences($what)
 
 // ----------------------------------------------------------------------------
 // bab_pm_file_upload_form --> should move to the Library
-
-function bab_pm_file_upload_form($label,$pophelp,$step,$id='')
+function bab_pm_file_upload_form($label, $pophelp, $step, $id = '')
 {
     global $file_max_upload_size;
-    if (!$file_max_upload_size || intval($file_max_upload_size)==0) $file_max_upload_size = 2*(1024*1024);
-    $max_file_size = (intval($file_max_upload_size) == 0) ? '': intval($file_max_upload_size);
+
+    if (!$file_max_upload_size || intval($file_max_upload_size) == 0) {
+        $file_max_upload_size = 2*(1024*1024);
+    }
+
+    $max_file_size = (intval($file_max_upload_size) == 0) ? '' : intval($file_max_upload_size);
 
     $label_id = (@$label_id) ? $label_id : 'postmaster-upload';
 
@@ -2358,48 +2369,48 @@ function bab_pm_file_upload_form($label,$pophelp,$step,$id='')
         . '<br /><input type="checkbox" name="dump_first" /> Empty subscribers list before import'
         . '</div></form>';
         ;
-} // end bab_pm_file_upload_form
+}
 
 // ----------------------------------------------------------------------------
 // Import from the old Newsletter Manager plugin
 // move to library
-
 function bab_pm_importfromnm()
-    {
-        $step= gps('step');
-        echo '<p class=bab_pm_subhed>IMPORT FROM NEWSLETTER MANAGER</P>';
-        echo '<fieldset id="bab_pm_importfromnm"><legend><span class="bab_pm_underhed">Import Subscribers</span></legend>';
-        $bab_txp_subscribers_table = safe_pfx('txp_subscribers');
-        $bab_pm_SubscribersTable = safe_pfx('bab_pm_subscribers');
-        $result = safe_query("UPDATE $bab_pm_SubscribersTable SET flag = '' ");
-        $subscribers = getRows("select * from $bab_txp_subscribers_table");
-        foreach($subscribers as $subscriber) {
-            $subscriberName = $subscriber['name'];
-            $subscriberEmail = $subscriber['email'];
-            $subscriberCustom1 = $subscriber['nl1'];
-            $subscriberCustom2 = $subscriber['nl2'];
-            $subscriberCustom3 = $subscriber['nl3'];
-            $subscriberCustom4 = $subscriber['nl4'];
-            $subscriberCustom5 = $subscriber['nl5'];
-            $subscriber_prefs = $subscriber['subscriber_prefs'];
-            $oldCatchall = $subscriber['catchall'];
-            //insert old subs into new db table
+{
+    $step = gps('step');
 
-            $md5 = md5(uniqid(rand(),true));
-            $strSQL = safe_query("INSERT INTO $bab_pm_SubscribersTable values (NULL,'$subscriberName','$subscriberEmail','default','$subscriberCustom1','$subscriberCustom2','$subscriberCustom3','$subscriberCustom4','$subscriberCustom5','$subscriber_prefs','$oldCatchall','','','','latest','','$md5')");
-        }
-        echo 'Check out your new subscribers <a href="?event=postmaster&step=subscriberlist">here</a>.<div class=bab_pm_alerts>NOTE: The old Newsletter Manager tables will remain in your database until you remove them.</div>';
-        echo '</fieldset>';
-    } // end bab_pm_importfromnm
+    echo '<p class=bab_pm_subhed>IMPORT FROM NEWSLETTER MANAGER</P>';
+    echo '<fieldset id="bab_pm_importfromnm"><legend><span class="bab_pm_underhed">Import Subscribers</span></legend>';
+
+    $bab_txp_subscribers_table = safe_pfx('txp_subscribers');
+    $bab_pm_SubscribersTable = safe_pfx('bab_pm_subscribers');
+    $result = safe_query("UPDATE $bab_pm_SubscribersTable SET flag = '' ");
+    $subscribers = getRows("select * from $bab_txp_subscribers_table");
+
+    foreach ($subscribers as $subscriber) {
+        $subscriberName = $subscriber['name'];
+        $subscriberEmail = $subscriber['email'];
+        $subscriberCustom1 = $subscriber['nl1'];
+        $subscriberCustom2 = $subscriber['nl2'];
+        $subscriberCustom3 = $subscriber['nl3'];
+        $subscriberCustom4 = $subscriber['nl4'];
+        $subscriberCustom5 = $subscriber['nl5'];
+        $subscriber_prefs = $subscriber['subscriber_prefs'];
+        $oldCatchall = $subscriber['catchall'];
+        //insert old subs into new db table
+
+        $md5 = md5(uniqid(rand(),true));
+        $strSQL = safe_query("INSERT INTO $bab_pm_SubscribersTable values (NULL,'$subscriberName','$subscriberEmail','default','$subscriberCustom1','$subscriberCustom2','$subscriberCustom3','$subscriberCustom4','$subscriberCustom5','$subscriber_prefs','$oldCatchall','','','','latest','','$md5')");
+    }
+
+    echo 'Check out your new subscribers <a href="?event=postmaster&step=subscriberlist">here</a>.<div class=bab_pm_alerts>NOTE: The old Newsletter Manager tables will remain in your database until you remove them.</div>';
+    echo '</fieldset>';
+}
 
 // ---- MAIL CODA ------------------------------------------------
-
 function bab_pm_mail_coda() // this is the coda, after mailing is complete
 {
     echo '<div class=bab_pm_alerts>
-
-        <img src="/images/percentImage.png" alt="complete" style="background-position: 0% 0%;" class="pm_prog_bar" /><br />
-
+<img src="/images/percentImage.png" alt="complete" style="background-position: 0% 0%;" class="pm_prog_bar" /><br />
 <p style="padding-top:10px;text-align:center;">Your mailing is complete. You may now close this window.</p>
 <p style="padding-top:10px;text-align:center;"><a href="?event=article">Return to Content > Write</a></p>
 </div>';
@@ -2410,7 +2421,6 @@ function bab_pm_mail_coda() // this is the coda, after mailing is complete
 // ---- This function creates two tables:
 // ---- the postMasterPrefs table (which handles the admin preferences)
 // ---- the subscribers table (which holds all of your subscriber information)
-
 function bab_pm_createTables()
 {
     global $txpcfg, $bab_pm_PrefsTable , $bab_pm_SubscribersTable, $bab_pm_mapTable, $DB;
@@ -2418,17 +2428,21 @@ function bab_pm_createTables()
     //function to create database
     $version = mysqli_get_server_info($DB->link);
     $dbcharset = "'".$txpcfg['dbcharset']."'";
+
     //Use "ENGINE" if version of MySQL > (4.0.18 or 4.1.2)
     $tabletype = ( intval($version[0]) >= 5 || preg_match('#^4\.(0\.[2-9]|(1[89]))|(1\.[2-9])#',$version))
         ? " ENGINE=MyISAM "
         : " TYPE=MyISAM ";
+
     // On 4.1 or greater use utf8-tables
-    if ( isset($dbcharset) && (intval($version[0]) >= 5 || preg_match('#^4\.[1-9]#',$version))) {
+    if (isset($dbcharset) && (intval($version[0]) >= 5 || preg_match('#^4\.[1-9]#',$version))) {
         $tabletype .= " CHARACTER SET = $dbcharset ";
+
         if (isset($dbcollate))
             $tabletype .= " COLLATE $dbcollate ";
         mysqli_query($DB->link, "SET NAMES ".$dbcharset);
     }
+
     $create_sql[] = safe_query("CREATE TABLE IF NOT EXISTS $bab_pm_PrefsTable (
         `listID` int(4) NOT NULL auto_increment,
         `listName` varchar(100) NOT NULL default '',
@@ -2442,8 +2456,8 @@ function bab_pm_createTables()
     ) $tabletype ");
 
     $custom_fields = '';
-    for ($i=1; $i <= BAB_CUSTOM_FIELD_COUNT; $i++)
-    {
+
+    for ($i = 1; $i <= BAB_CUSTOM_FIELD_COUNT; $i++) {
         $custom_fields .= "`subscriberCustom{$i}` longtext NULL," . n;
     }
 
@@ -2481,18 +2495,18 @@ function bab_pm_createTables()
     $create_sql[] = safe_query("INSERT INTO $bab_pm_SubscribersTable (subscriberFirstName, subscriberLastName, subscriberEmail, subscriberCustom1, subscriberCustom10, unsubscribeID) values ('Test','User','test@test','custom1','custom10','$md5')");
 
     safe_insert('bab_pm_subscribers_list', "list_id=1, subscriber_id=1");
-    return;
-} // end create tables
 
-function bab_pm_addCustomFields($columns=null)
+    return;
+}
+
+function bab_pm_addCustomFields($columns = null)
 {
     global $txpcfg, $bab_pm_PrefsTable , $bab_pm_SubscribersTable, $bab_pm_mapTable;
 
-    for ($i=1; $i <= BAB_CUSTOM_FIELD_COUNT; $i++)
-    {
+    for ($i = 1; $i <= BAB_CUSTOM_FIELD_COUNT; $i++) {
         $n = "subscriberCustom{$i}";
-        if (empty($columns) || (is_array($columns) && !in_array($n, $columns)))
-        {
+
+        if (empty($columns) || (is_array($columns) && !in_array($n, $columns))) {
             safe_query("ALTER TABLE {$bab_pm_SubscribersTable} ADD COLUMN `{$n}` longtext NULL");
         }
     }
@@ -2504,21 +2518,24 @@ function bab_pm_create_subscribers_list()
     global $txpcfg, $bab_pm_PrefsTable , $bab_pm_SubscribersTable, $bab_pm_mapTable, $DB;
 
     $lists_table = @getThings('describe `'.PFX.'bab_pm_subscribers_list`');
-    if ($lists_table)
-    {
+
+    if ($lists_table) {
         return;
     }
 
     //function to create database
     $version = mysqli_get_server_info($DB->link);
     $dbcharset = "'".$txpcfg['dbcharset']."'";
+
     //Use "ENGINE" if version of MySQL > (4.0.18 or 4.1.2)
     $tabletype = ( intval($version[0]) >= 5 || preg_match('#^4\.(0\.[2-9]|(1[89]))|(1\.[2-9])#',$version))
         ? " ENGINE=MyISAM "
         : " TYPE=MyISAM ";
+
     // On 4.1 or greater use utf8-tables
     if ( isset($dbcharset) && (intval($version[0]) >= 5 || preg_match('#^4\.[1-9]#',$version))) {
         $tabletype .= " CHARACTER SET = $dbcharset ";
+
         if (isset($dbcollate))
             $tabletype .= " COLLATE $dbcollate ";
         mysqli_query($DB->link, "SET NAMES ".$dbcharset);
@@ -2540,17 +2557,14 @@ function bab_pm_create_subscribers_list()
     // loop over subscribers
     $rs = safe_rows_start('subscriberID, subscriberLists', 'bab_pm_subscribers', '1=1');
 
-    if ($rs)
-    {
-        while ($row = nextRow($rs))
-        {
+    if ($rs) {
+        while ($row = nextRow($rs)) {
             extract($row);
 
-            foreach($lists as $list)
-            {
+            foreach($lists as $list) {
                 extract($list);
-                if (stripos($subscriberLists, $listName) !== false)
-                {
+
+                if (stripos($subscriberLists, $listName) !== false) {
                     safe_insert('bab_pm_subscribers_list',
                         "list_id = $listID, subscriber_id = $subscriberID");
                 }
@@ -2565,16 +2579,18 @@ function bab_pm_unsubscribe()
 {
     $unsubscribeID = gps('uid');
     $unsubscribeID = doSlash($unsubscribeID);
+
     if (safe_delete("bab_pm_subscribers", "unsubscribeID='$unsubscribeID'")) {
         safe_delete("bab_pm_subscribers_list", "subscriber_id = '$unsubscribeID'");
         return '';
     }
+
     return bab_pm_preferences('unsubscribe_error');
 }
 
 
 // -------------------------------------------------------------
-function subscriberlist_searching_form($crit,$method)
+function subscriberlist_searching_form($crit, $method)
 {
     global $prefs;
 
@@ -2583,17 +2599,19 @@ function subscriberlist_searching_form($crit,$method)
         'email' => gTxt('Subscriber Email'),
         'lists' => gTxt('Subscriber List')
     );
+
     $page_url = page_url(array());
 
-    for ($i=1; $i <= 10; $i++)
-    {
+    for ($i = 1; $i <= 10; $i++) {
         $field = 'subscriberCustom' . $i;
         $key = 'bab_pm-' . $field;
-        if (!empty($prefs[$key]))
+
+        if (!empty($prefs[$key])) {
             $methods[$field] = $prefs[$key];
+        }
     }
 
-    $selection = selectInput('method',$methods,$method);
+    $selection = selectInput('method', $methods, $method);
 
     $search_form = <<<search_form
 <form action="$page_url" method="POST" id="subscriber_edit_form" style="text-align:center;padding-bottom:10px;">
@@ -2613,15 +2631,16 @@ search_form;
 }
 
 // -------------------------------------------------------------
-function listlist_searching_form($crit,$method)
+function listlist_searching_form($crit, $method)
 {
     $methods =  array(
-        'name' => gTxt('List Name'),
+        'name'        => gTxt('List Name'),
         'admin email' => gTxt('Admin Email'),
     );
-$atts['type'] = 'request_uri';
-        $page_url = page_url($atts);
-$selection = selectInput('method',$methods,$method);
+
+    $atts['type'] = 'request_uri';
+    $page_url = page_url($atts);
+    $selection = selectInput('method', $methods, $method);
 
 $search_form = <<<search_form
 <form action="$page_url" method="POST" id="subscriber_edit_form" style="text-align:center;padding-bottom:10px;">
@@ -2642,16 +2661,19 @@ search_form;
 }
 
 // -------------------------------------------------------------
-function subscriberlist_nav_form($page, $numPages, $sort, $dir='', $crit='', $method='')
+function subscriberlist_nav_form($page, $numPages, $sort, $dir = '', $crit = '', $method = '')
 {
     $nav[] = ($page > 1)
-    ?   bab_pm_PrevNextLink("postmaster",$page-1,gTxt('prev'),'prev',$sort, $dir, $crit, $method)
-    :   '';
+        ?   bab_pm_PrevNextLink("postmaster",$page-1,gTxt('prev'),'prev',$sort, $dir, $crit, $method)
+        :   '';
     $nav[] = sp.small($page. '/'.$numPages).sp;
+
     $nav[] = ($page != $numPages)
-    ?   bab_pm_PrevNextLink("postmaster",$page+1,gTxt('next'),'next',$sort, $dir, $crit, $method)
-    :   '';
-    if ($nav) return graf(join('',$nav),' align="center"');
+        ?   bab_pm_PrevNextLink("postmaster",$page+1,gTxt('next'),'next',$sort, $dir, $crit, $method)
+        :   '';
+    if ($nav) {
+        return graf(join('',$nav),' align="center"');
+    }
 }
 
 // -------------------------------------------------------------
@@ -2665,26 +2687,33 @@ function subscriberlist_multi_edit()
 {
     if (ps('selected') and !has_privs('postmaster')) {
         $ids = array();
+
         if (has_privs('postmaster')) {
             foreach (ps('selected') as $subscriberID) {
                 $subscriber = safe_field('subscriberID', 'bab_pm_subscribers', "ID='".doSlash($id)."'");
             }
+
             $_POST['selected'] = $ids;
         }
+
         $deleted = event_multi_edit('bab_pm_subscribers','subscriberID');
-        if(!empty($deleted)){
+
+        if (!empty($deleted)){
             $method = ps('method');
+
             return bab_pm_subscriberlist(messenger('postmaster',$deleted,(($method == 'delete')?'deleted':'modified')));
         }
+
         return bab_pm_subscriberlist();
     }
 }
 
 // ---- copy of column_head function to allow for different $step value
 
-function bab_pm_column_head($value, $sort='', $current_event='', $islink='', $dir='')
+function bab_pm_column_head($value, $sort = '', $current_event = '', $islink = '', $dir = '')
 {
     $o = '<th class="small"><strong>';
+
     if ($islink) {
         $o.= '<a href="index.php';
         $o.= ($sort) ? "?sort=$sort":'';
@@ -2692,17 +2721,24 @@ function bab_pm_column_head($value, $sort='', $current_event='', $islink='', $di
         $o.= ($current_event) ? a."event=$current_event":'';
         $o.= a.'step=subscribers">';
     }
+
     $o .= gTxt($value);
-    if ($islink) { $o .= "</a>"; }
-        $o .= '</strong></th>';
-        return $o;
+
+    if ($islink) {
+        $o .= "</a>";
     }
+
+    $o .= '</strong></th>';
+
+    return $o;
+}
 
 // ---- copy of column_head function to allow for different $step value
 
-function bab_pm_list_column_head($value, $sort='', $current_event='', $islink='', $dir='')
+function bab_pm_list_column_head($value, $sort = '', $current_event = '', $islink = '', $dir = '')
 {
     $o = '<th class="small"><strong>';
+
     if ($islink) {
         $o.= '<a href="index.php';
         $o.= ($sort) ? "?sort=$sort":'';
@@ -2710,26 +2746,28 @@ function bab_pm_list_column_head($value, $sort='', $current_event='', $islink=''
         $o.= ($current_event) ? a."event=$current_event":'';
         $o.= a.'step=lists">';
     }
+
     $o .= gTxt($value);
-    if ($islink) { $o .= "</a>"; }
-        $o .= '</strong></th>';
-        return $o;
+    if ($islink) {
+        $o .= "</a>";
     }
+    $o .= '</strong></th>';
+    return $o;
+}
 
 // ---- copy of PrevNextLink function to allow for different $step value
-
-function bab_pm_PrevNextLink($event,$topage,$label,$type,$sort='',$dir='',$crit='',$method='')
+function bab_pm_PrevNextLink($event, $topage, $label, $type, $sort = '', $dir = '', $crit = '', $method = '')
 {
-          return join('',array(
-              '<a href="?event='.$event.a.'step=subscribers'.a.'page='.$topage,
-              ($sort) ? a.'sort='.$sort : '',
-              ($dir) ? a.'dir='.$dir : '',
-              ($crit) ? a.'crit='.$crit : '',
-              ($method) ? a.'method='.$method : '',
-             '" class="navlink">',
-              ($type=="prev") ? '&#8249;'.sp.$label : $label.sp.'&#8250;',
-              '</a>'
-          ));
+    return join('', array(
+        '<a href="?event='.$event.a.'step=subscribers'.a.'page='.$topage,
+        ($sort) ? a.'sort='.$sort : '',
+        ($dir) ? a.'dir='.$dir : '',
+        ($crit) ? a.'crit='.$crit : '',
+        ($method) ? a.'method='.$method : '',
+        '" class="navlink">',
+        ($type=="prev") ? '&#8249;'.sp.$label : $label.sp.'&#8250;',
+        '</a>'
+        ));
 }
 
 
@@ -2740,7 +2778,7 @@ function bab_pm_data($atts)
     global $row, $rs, $thisarticle;
 
     extract(lAtts(array(
-        'display' => 'Body',
+        'display'    => 'Body',
         'strip_html' => 'no',
     ),$atts));
 
@@ -2765,33 +2803,41 @@ function bab_pm_data($atts)
     if ($display == 'link') {
         $link = "<txp:permlink />";
         $parsed_link = parse($link);
+
         return $parsed_link;
     }
+
     if ($display == 'Body_html') {
-        if (!$Body_html) { return; } else {
+        if (!$Body_html) {
+            return;
+        } else {
             if ($strip_html == 'yes') {
                 $Body_html = strip_tags(deGlyph($Body_html));
             }
+
             return $Body_html;
         }
     }
+
     if ($display == 'Excerpt_html') {
-        if (!$Excerpt_html) { return; } else {
+        if (!$Excerpt_html) {
+            return;
+        } else {
             if ($strip_html == 'yes') {
                 $Excerpt_html = strip_tags(deGlyph($Excerpt_html));
             }
+
             return $Excerpt_html;
         }
     } else {
         return $$display;
     }
-}//end tag
+}
 
 
 // ------------------------------------------------------------
 function bab_pm_mime($atts)
 {
-
 // if you're coming here, that means it's HTML -- no need to check
 
 // make $headers global, so you can update the variable that was set above
@@ -2799,7 +2845,7 @@ function bab_pm_mime($atts)
 
 // extract the attributes for the tag (to determine which mime they want)
     extract(lAtts(array(
-    'type' => 'text',
+        'type' => 'text',
     ),$atts));
 
 // build mimes
@@ -2831,24 +2877,32 @@ end_mime;
 
     $sep = (!IS_WIN) ? "\n" : "\r\n";
     $headers = "From: $listAdminEmail".
-                   $sep.'X-Mailer: Textpattern/Postmaster'.
-                   $sep.'MIME-Version: 1.0'.
-                   $sep.'Content-Transfer-Encoding: 8bit'.
-                   $sep.'Content-Type: multipart/alternative; boundary="'.$mime_boundary.'"'.
-                   $sep;
+       $sep.'X-Mailer: Textpattern/Postmaster'.
+       $sep.'MIME-Version: 1.0'.
+       $sep.'Content-Transfer-Encoding: 8bit'.
+       $sep.'Content-Type: multipart/alternative; boundary="'.$mime_boundary.'"'.
+       $sep;
 
     if ($type == 'text') {
-        if (!$text_mime) { return; } else {
+        if (!$text_mime) {
+            return;
+        } else {
             return $text_mime;
         }
     }
+
     if ($type == 'html') {
-        if (!$html_mime) { return; } else {
+        if (!$html_mime) {
+            return;
+        } else {
             return $html_mime;
         }
     }
+
     if ($type == 'end') {
-        if (!$end_mime) { return; } else {
+        if (!$end_mime) {
+            return;
+        } else {
             return $end_mime;
         }
     }
@@ -2861,7 +2915,7 @@ function bab_pm_unsubscribeLink($atts, $thing = '')
 
     extract(lAtts(array(
         'type' => 'text',
-    ),$atts));
+    ), $atts));
 
     $default_url = $prefs[_bab_prefix_key('default_unsubscribe_url')];
 
