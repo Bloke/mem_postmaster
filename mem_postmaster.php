@@ -1247,18 +1247,28 @@ eop_form;
 
 function bab_pm_bulk_mail($bab_pm_total, $bab_pm_radio, $subject, $thisarticle, $template)
 {
-    global $prefs;
+    global $prefs, $production_status;
 
     $usePhpMailer = false;
     $mail = null;
 
     if (class_exists('PHPMailer\PHPMailer\PHPMailer')) {
         $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+
+        if ($production_status === 'debug') {
+            $mail->SMTPDebug  = 3;
+        } elseif ($production_status === 'testing') {
+            $mail->SMTPDebug  = 2;
+        }
+
+        // Bypass the fact that PHPMailer clashes with <txp:php>.
+        $mail::$validator = 'phpinternal';
+
         $usePhpMailer = true;
     }
 
-    echo '<P class=bab_pm_subhed>BULK MAIL</p>';
-    echo '<P>Currently mailing: ' . $subject . '</p>';
+    echo '<p class=bab_pm_subhed>BULK MAIL</p>';
+    echo '<p>Currently mailing: ' . $subject . '</p>';
 
     // ----- set globals for library funcs
 
@@ -1348,7 +1358,7 @@ status_report;
         $email_batch = 10;
     }
 
-    $i=1; // set internal counter
+    $i = 1; // set internal counter
 
     foreach ($subscribers as $subscriber) {
         if ($i <= $email_batch) {
@@ -1382,22 +1392,37 @@ status_report;
 
             if ($usePhpMailer) {
                 try {
+                    $smtp_host = get_pref('smtp_host');
+                    $smtp_user = get_pref('smtp_user');
+                    $smtp_pass = get_pref('smtp_pass');
+                    $smtp_port = get_pref('smtp_port');
+
+                    if ($smtp_host) {
+                        $mail->IsSMTP();
+                        $mail->SMTPAuth = true;
+                        $mail->Host = $smtp_host;
+                        $mail->Username = $smtp_user;
+                        $mail->Password = $smtp_pass;
+                        $mail->SMTPSecure = 'tls';
+                        $mail->Port = $smtp_port;
+                    }
+
                     $mail->IsHTML(true);
-                    $mail->AddAddress($subscriberEmail);
+                    $mail->addAddress($subscriberEmail);
                     $mail->Subject = $subject;
-                    $mail->Body    = $email;
-                    $mail->AltBody = $plain;
+                    $mail->Body    = $msg;
+                    $mail->CharSet = $charset;
 
                     if (is_valid_email($smtp_from)) {
                         $mail->Sender = $smtp_from;
-                        $mail->AddReplyTo($smtp_from, parse('<txp:site_name />'));
-                        $mail->SetFrom($smtp_from, parse('<txp:site_name />'), false);
+                        $mail->addReplyTo($smtp_from, parse('<txp:site_name />'));
+                        $mail->setFrom($smtp_from, parse('<txp:site_name />'), false);
                     } else {
-                        $mail->AddReplyTo($headers['From'], parse('<txp:site_name />'));
-                        $mail->SetFrom($headers['From'], parse('<txp:site_name />'));
+                        $mail->addReplyTo($headers['From'], parse('<txp:site_name />'));
+                        $mail->setFrom($headers['From'], parse('<txp:site_name />'));
                     }
 
-                    $ret = $mail->Send();
+                    $ret = $mail->send();
 
                 } catch (PHPMailer\PHPMailer\Exception $e) {
                    echo $e->errorMessage();
@@ -1405,9 +1430,9 @@ status_report;
                    echo $e->getMessage();
                 }
 
-                $mail->ClearAddresses();
-                $mail->ClearReplyTos();
-                $mail->ClearAttachments();
+                $mail->clearAddresses();
+                $mail->clearReplyTos();
+                $mail->clearAttachments();
             } else {
                 $headerStr = '';
 
@@ -1460,7 +1485,7 @@ status_report;
 
 function bab_pm_mastheadNavigation()
 {
-    echo '<center><P class="bab_pm_hed">POSTMASTER</p>';
+    echo '<center><p class="bab_pm_hed">POSTMASTER</p>';
 $layout = <<<layout
 <td class="navlink2">hello</td><td class="navlink2"><a href="?event=postmaster&step=listlist"  class="plain">Lists</a></td><td class="navlink2"><a href="?event=postmaster&step=add"  class="plain">Add</a></td><td class="navlink2"><a href="?event=postmaster&step=importexport"  class="plain">Import/Export</a></td>
  </tr></table><Br>
@@ -2293,7 +2318,7 @@ function bab_pm_preferences($what)
         'edit_fields_height'           => '14',
         'zemDoSubscribe_no'           => 'No',
         'unsubscribe_error'           => 'That is not a valid unsubscription. Please contact the list administrator or website owner. ',
-        'aggregate_field'           => 'zemSubscriberAggregate',
+        'aggregate_field'           => 'comSubscriberAggregate',
 
     );
 
@@ -2342,7 +2367,7 @@ function bab_pm_file_upload_form($label,$pophelp,$step,$id='')
 function bab_pm_importfromnm()
     {
         $step= gps('step');
-        echo '<P class=bab_pm_subhed>IMPORT FROM NEWSLETTER MANAGER</P>';
+        echo '<p class=bab_pm_subhed>IMPORT FROM NEWSLETTER MANAGER</P>';
         echo '<fieldset id="bab_pm_importfromnm"><legend><span class="bab_pm_underhed">Import Subscribers</span></legend>';
         $bab_txp_subscribers_table = safe_pfx('txp_subscribers');
         $bab_pm_SubscribersTable = safe_pfx('bab_pm_subscribers');
