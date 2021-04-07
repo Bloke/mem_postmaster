@@ -1140,7 +1140,7 @@ function bab_pm_initialize_mail()
 
     $bab_pm_radio = (!empty($_REQUEST['bab_pm_radio'])) ? gps('bab_pm_radio') : gps('radio');
 
-    $sep = !IS_WIN ? "\n" : "\r\n"; // is_windows line break
+    $sep = IS_WIN ? "\r\n" : "\n";
 
     include_once txpath.'/publish.php'; // this line is required
 
@@ -1207,9 +1207,8 @@ EOSQL;
     // Additional headers required if using regular mail.
     if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
        $headers['MIME-Version'] = '1.0';
-       $headers['Subject'] = $subject;
        $headers['Content-Transfer-Encoding'] = '8bit';
-       $headers['Content-Type'] = 'multipart/alternative;boundary=' . $mime_boundary;
+       $headers['Content-Type'] = 'text/plain';
     }
 
     // if use override is selected, then overwrite the listEmailForm variable
@@ -1221,13 +1220,16 @@ EOSQL;
     $listEmailForm = trim($listEmailForm);
 
     if (!empty($listEmailForm)) {
-        $template['html'] = fetch('Form','txp_form','name',"$listEmailForm");
-        $template['text'] = fetch('Form','txp_form','name',"${listEmailForm}_text");
+        $theForm = fetch('Form','txp_form','name',"$listEmailForm");
+
+        if ($theForm) {
+            $template = bab_pm_extract($theForm);
+        }
     }
 
     // test to confirm that we actually have a form, otherwise use default
     if (empty($template) || !$template) {
-$template['html'] = $template['text'] = <<<eop_form
+$template['html'] = $template['text'] = $template['combined'] = <<<eop_form
 <txp:author /> has posted a new article at <txp:site_url />.
 Read article at: <txp:bab_pm_data display="link" />
 Unsubscribe: <txp:bab_pm_unsubscribeLink />
@@ -1284,7 +1286,7 @@ function bab_pm_bulk_mail($bab_pm_total, $bab_pm_radio, $subject, $thisarticle, 
         global $$n; // required (extracted in foreach, then sent to bab_pm_data)
     }
 
-    $sep = !IS_WIN ? "\n" : "\r\n"; // is_windows line break
+    $sep = IS_WIN ? "\r\n" : "\n";
 
     // prep Title, Body and Excerpt
     @extract($rs);
@@ -1377,7 +1379,7 @@ status_report;
             }
 
             // all necessary variables now defined, parse email template
-            $email = @parse($template['html']);
+            $email = parse(empty($template['html']) ? $template['combined'] : $template['html']);
             $email = str_replace("\r\n", "\n", $email);
             $email = str_replace("\r", "\n", $email);
             $email = str_replace("\n", $sep, $email);
@@ -1385,7 +1387,7 @@ status_report;
 
             $email = mb_convert_encoding($email, "HTML-ENTITIES", "UTF-8");
 
-            $plain = strip_tags(parse($template['text']));
+            $plain = parse(empty($template['text']) ? $template['combined'] : $template['text']);
             callback_event_ref('mem_postmaster.message', 'text', 0, $template, $plain);
 
             if ($usePhpMailer) {
@@ -1408,8 +1410,8 @@ status_report;
                     $mail->IsHTML(true);
                     $mail->addAddress($subscriberEmail);
                     $mail->Subject = $subject;
-                    $mail->Body    = $msg;
-                    $mail->CharSet = $charset;
+                    $mail->Body    = $email;
+                    $mail->AltBody = $plain;
 
                     if (is_valid_email($smtp_from)) {
                         $mail->Sender = $smtp_from;
@@ -1433,20 +1435,11 @@ status_report;
                 $mail->clearAttachments();
             } else {
                 $headerStr = '';
+                $message = parse($template['combined']);
 
                 foreach ($headers as $hkey => $hval) {
                     $headerStr .= $hkey.': '.$hval.$sep;
                 }
-
-                $message = $sep.$sep.'--' . $mime_boundary;
-                $message .= $sep.'Content-type: text/plain;charset=utf-8';
-                $message .= $sep.$sep.$plain;
-
-                $message .= $sep.$sep.'--' . $mime_boundary;
-                $message .= $sep.'Content-type: text/html;charset=utf-8';
-                $message .= $sep.$sep.$email;
-
-                $message .= $sep.$sep.'--' . $mime_boundary . '--';
 
                 $ret = mail($subscriberEmail, $subject, $message, $headerStr);
             }
@@ -1479,6 +1472,66 @@ status_report;
         echo '<div class=bab_pm_alerts>Your mailing is complete.</div>';
     }
 } // end bulk mail
+
+// ----------------------------------------------------------------------------
+// Extract plaintext and HTML chunks from a form by parsing for
+// <txp:bab_pm_mime> or <bab::pm_mime>
+
+function bab_pm_extract($form)
+{
+    $out = array(
+        'text'     => '',
+        'html'     => '',
+        'combined' => $form,
+    );
+
+    $needles = array(
+        "<txp:bab_pm_mime",
+        "<bab::pm_mime",
+    );
+
+    $needle = '';
+
+    foreach ($needles as $string) {
+        if (strpos($form, $string, 0) !== false) {
+            $needle = $string;
+        }
+    }
+
+    if (!$needle) {
+        // @todo 4.9.0+ read html_email pref and set either 'text' or 'html' by default accordingly.
+        return $out;
+    }
+
+    $positions = array();
+    $lastPos = 0;
+    $skip = strlen($needle);
+    preg_match_all('|'.$needle.'\stype="(.*?)"\s/>|', $form, $types);
+
+    $offset = 0;
+
+    while (($lastPos = strpos($form, $needle, $lastPos)) !== false) {
+        $endtagPos = strpos($form, "/>", $lastPos) + 2;
+
+        if ($offset > 0) {
+            $positions[$types[1][$offset-1]]['end'] = $lastPos;
+        }
+
+        $positions[$types[1][$offset]]['start'] = $endtagPos;
+        $lastPos = $endtagPos;
+        $offset++;
+    }
+
+    $positions[$types[1][$offset-1]]['end'] = strlen($form);
+
+    foreach ($positions as $type => $blocks) {
+        $out[$type] = trim(substr($form, $blocks['start'], $blocks['end'] - $blocks['start']));
+    }
+
+    unset ($out['end']);
+
+    return $out;
+}
 
 // ----------------------------------------------------------------------------
 // Navigation
@@ -2838,23 +2891,15 @@ function bab_pm_data($atts)
 // ------------------------------------------------------------
 function bab_pm_mime($atts)
 {
-// if you're coming here, that means it's HTML -- no need to check
-
-// make $headers global, so you can update the variable that was set above
+    // If you're coming here, that means it's HTML -- no need to check.
     global $headers, $mime_boundary, $listAdminEmail;
 
-// extract the attributes for the tag (to determine which mime they want)
+    // Determine which mime type is required.
     extract(lAtts(array(
         'type' => 'text',
     ),$atts));
 
-// build mimes
-
-    $top_mime = <<<top_mime
-Content-Type: multipart/alternative; boundary="$mime_boundary"
-
-top_mime;
-
+    // Build mimes - trailing blank line is necessary.
     $text_mime = <<<text_mime
 --$mime_boundary
 Content-Type: text/plain; charset=UTF-8
@@ -2873,39 +2918,22 @@ html_mime;
 --$mime_boundary--
 end_mime;
 
-    // overwrite default headers with new headers:
+    // Overwrite default content-type header.
+    $headers['Content-Type'] = 'multipart/alternative; boundary="'.$mime_boundary.'"';
 
-    $sep = (!IS_WIN) ? "\n" : "\r\n";
-    $headers = "From: $listAdminEmail".
-       $sep.'X-Mailer: Textpattern/Postmaster'.
-       $sep.'MIME-Version: 1.0'.
-       $sep.'Content-Transfer-Encoding: 8bit'.
-       $sep.'Content-Type: multipart/alternative; boundary="'.$mime_boundary.'"'.
-       $sep;
-
-    if ($type == 'text') {
-        if (!$text_mime) {
-            return;
-        } else {
-            return $text_mime;
-        }
+    if ($type === 'text') {
+        return $text_mime;
     }
 
-    if ($type == 'html') {
-        if (!$html_mime) {
-            return;
-        } else {
-            return $html_mime;
-        }
+    if ($type === 'html') {
+        return $html_mime;
     }
 
-    if ($type == 'end') {
-        if (!$end_mime) {
-            return;
-        } else {
-            return $end_mime;
-        }
+    if ($type === 'end') {
+        return $end_mime;
     }
+
+    return;
 }
 
 // ------------------------------------------------------------
