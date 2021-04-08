@@ -1700,7 +1700,7 @@ function bab_pm_comconnect_submit()
 {
     global $com_connect_values;
 
-    extract(doSlash($com_connect_values));
+    extract($com_connect_values);
     $bab_pm_SubscribersTable = safe_pfx('bab_pm_subscribers');
 
     $subscriberEmail = @trim($subscriberEmail);
@@ -1723,9 +1723,9 @@ function bab_pm_comconnect_submit()
     $is_unsubscribe = $is_unsubscribe == 'on' || $is_unsubscribe == 'yes';
 
     if ($unsubscribeID) {
-        $where = "unsubscribeID='".$unsubscribeID."'";
+        $where = "unsubscribeID='".doSlash($unsubscribeID)."'";
     } else {
-        $where = "subscriberEmail='".$subscriberEmail."'";
+        $where = "subscriberEmail='".doSLash($subscriberEmail)."'";
     }
 
     $subscriber_id = (int)safe_field('subscriberID', 'bab_pm_subscribers', $where);
@@ -1757,7 +1757,7 @@ function bab_pm_comconnect_submit()
 
         // ignore empty values on update
         if (!empty($val) || !$subscriber_id) {
-            $set[] = 'subscriber' . $f . " = '" . $val . "'";
+            $set[] = 'subscriber' . $f . " = '" . doSlash($val) . "'";
         }
     }
 
@@ -1769,29 +1769,26 @@ function bab_pm_comconnect_submit()
         // update existing subscriber details
         safe_update('bab_pm_subscribers', implode(', ', $set), "subscriberID = $subscriber_id");
 
-        // get current list memberships
-        $subscriptions = safe_rows('list_id', 'bab_pm_subscribers_list', "subscriber_id = $subscriber_id");
+        // delete list of current memberships ready for the new set
+        safe_delete('bab_pm_subscribers_list', "subscriber_id = $subscriber_id");
     }
 
     if ($subscriber_id) {
-        if (!is_array($subscriptions)) {
-            $subscriptions = array();
-        }
-
         // get lists
         $lists = safe_rows('listID, listName', 'bab_pm_list_prefs', '1=1');
 
-        $sub_lists = explode(',', ps('subscriberLists'));
+        $sub_list_value = ps('subscriberLists');
+        $sub_lists = is_array($sub_list_value) ? $sub_list_value : explode(',', $sub_list_value);
 
         foreach ($sub_lists as $slist) {
             foreach ($lists as $l) {
-                $list_id = $l['listID'];
+                $list_id = (int)$l['listID'];
                 $list_name = trim($l['listName']);
 
-                // if the list name is valid and not already subscribed
+                // if the list name is valid and not already subscribed.
                 if (
-                    (!is_numeric($slist) && strcasecmp($list_name, $slist) == 0 && !in_array($list_id, $subscriptions))
-                    || (is_numeric($slist) && $list_id == $slist && !in_array($list_id, $subscriptions))
+                    (!is_numeric($slist) && strcasecmp($list_name, $slist) == 0)
+                    || (is_numeric($slist) && $list_id == $slist)
                 ) {
                     // subscribe
                     safe_insert('bab_pm_subscribers_list',
