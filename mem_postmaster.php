@@ -1272,8 +1272,8 @@ function bab_pm_bulk_mail($bab_pm_total, $bab_pm_radio, $subject, $thisarticle, 
 
     // ----- set globals for library funcs
 
-    global $headers, $mime_boundary, $bab_pm_unsubscribeLink, $bab_pm_PrefsTable, $bab_pm_SubscribersTable, $row, $rs;
-    global $subscriberName, $subscriberFirstName, $subscriberLastName, $subscriberEmail, $subscriberLists;
+    global $headers, $mime_boundary, $bab_pm_unsubscribeLink, $bab_pm_PrefsTable, $bab_pm_SubscribersTable, $row, $rs, $skin;
+    global $subscriberName, $subscriberFirstName, $subscriberLastName, $subscriberEmail, $subscriberLists, $txp_sections;
 
     $unsubscribe_url = trim($prefs[_bab_prefix_key('default_unsubscribe_url')]);
 
@@ -1288,8 +1288,9 @@ function bab_pm_bulk_mail($bab_pm_total, $bab_pm_radio, $subject, $thisarticle, 
 
     $sep = IS_WIN ? "\r\n" : "\n";
 
-    // prep Title, Body and Excerpt
+    // prep Skin, Title, Body and Excerpt
     @extract($rs);
+    $skin = $txp_sections[$Section]['skin'];
     parse(@$Title);
     parse(@$Body);
     $Body = str_replace("\r\n", "\n", @$Body);
