@@ -17,7 +17,7 @@ $plugin['name'] = 'mem_postmaster';
 // 1 = Plugin help is in raw HTML.  Not recommended.
 # $plugin['allow_html_help'] = 1;
 
-$plugin['version'] = '1.0.20';
+$plugin['version'] = '1.1.0';
 $plugin['author'] = 'Ben Bruce/Michael Manfre';
 $plugin['author_uri'] = '';
 $plugin['description'] = 'Simple email-on-post/newsletter manager for Textpattern';
@@ -76,6 +76,7 @@ Postmaster
 by Ben Bruce
 Help documentation: http://www.benbruce.com/postmaster
 Support forum thread: http://forum.textpattern.com/viewtopic.php?id=19510
+*** IMPORTANT: FOR TEXTPATTERN v4.9.0+ ONLY ***
 */
 global $event, $step;
 
@@ -241,8 +242,8 @@ $(document).ready(function(){
 jshas;
 
     // check tables. if not exist, create tables
-    $check_prefsTable = @getThings('describe `'.PFX.'bab_pm_list_prefs`');
-    $check_subscribersTable = @getThings('describe `'.PFX.'bab_pm_subscribers`');
+    $check_prefsTable = safe_exists('bab_pm_list_prefs');
+    $check_subscribersTable = safe_exists('bab_pm_subscribers');
 
     if (!$check_prefsTable or !$check_subscribersTable) {
         bab_pm_createTables();
@@ -274,22 +275,22 @@ jshas;
         $step = 'subscribers';
     }
     //assign all down state
-    $td_subscribers = $td_lists = $td_importexport = $td_formsend = $td_prefs = '<td class="navlink">';
+    $td_subscribers = $td_lists = $td_importexport = $td_formsend = $td_prefs = '<td>';
 
     $active_tab_var = 'td_' . $step;
-    $$active_tab_var = '<td class="navlink-active">';
+    $$active_tab_var = '<td>';
 
     $pm_nav = <<<pm_nav
-<table id="pagetop" cellpadding="0" cellspacing="0" style="padding-bottom:10px;margin-top:-20px;">
+<table id="pagetop" cellpadding="0" cellspacing="0" style="padding-bottom:10px;margin:-20px auto 0 auto;">
     <tr id="nav-secondary"><td align="center" class="tabs" colspan="2">
         <td>
             <table id="bab_pm_nav" cellpadding="0" cellspacing="0" align="center" colspan="2" style="margin-bottom:30px;" >
                 <tr>
-                $td_subscribers<a href="?event=postmaster&step=subscribers"  class="plain">Subscribers</a></td>
-                $td_lists<a href="?event=postmaster&step=lists"  class="plain">Lists</a></td>
-                $td_importexport<a href="?event=postmaster&step=importexport"  class="plain">Import/Export</a></td>
-                $td_formsend<a href="?event=postmaster&step=formsend"  class="plain">Direct Send</a></td>
-                $td_prefs<a href="?event=postmaster&step=prefs"  class="plain">Preferences</a></td>
+                $td_subscribers<a href="?event=postmaster&step=subscribers" class="navlink">Subscribers</a></td>
+                $td_lists<a href="?event=postmaster&step=lists" class="navlink">Lists</a></td>
+                $td_importexport<a href="?event=postmaster&step=importexport" class="navlink">Import/Export</a></td>
+                $td_formsend<a href="?event=postmaster&step=formsend" class="navlink">Direct Send</a></td>
+                $td_prefs<a href="?event=postmaster&step=prefs" class="navlink">Preferences</a></td>
                 </tr>
             </table>
         </td>
@@ -383,10 +384,11 @@ function bab_pm_makeform()
             echo "<fieldset id=bab_pm_edit><legend>Editing List: $row[listName]</legend>";
         }
 
-        $form_prefix = $prefs[_bab_prefix_key('form_select_prefix')];
+        $form_prefix = get_pref(_bab_prefix_key('form_select_prefix'));
 
         $forms = safe_column('name', 'txp_form',"name LIKE '". doSlash($form_prefix) . "%'");
-        $form_select = selectInput($bab_prefix.ucfirst('listEmailForm'), $forms, @$row['listEmailForm']);
+        $listEmailForm = empty($row['listEmailForm']) ? '' : $row['listEmailForm'];
+        $form_select = selectInput($bab_prefix.ucfirst('listEmailForm'), $forms, $listEmailForm);
         // replace class
         $form_select = str_replace('class="list"', 'class="bab_pm_input"', $form_select);
     }
@@ -428,7 +430,7 @@ $(document).ready(function () {
 eojs;
 
                 echo $js . '<input id="'.$column.'_checkbox" type="checkbox" class="bab_pm_input" ' . $checked . '/>'.$checkbox_text.'</dd><dd>' .
-                    '<input type="text" name="' . $bab_input_name . '" value="' . doSpecial(@$row[$column]) . '"' .
+                    '<input type="text" name="' . $bab_input_name . '" value="' . doSpecial(empty($row[$column]) ? '' : $row[$column]) . '"' .
                         (!empty($checked) ? ' disabled="disabled"' : '') . ' />' .
                     '</dd>';
                 break;
@@ -448,7 +450,7 @@ eojs;
                 }
                 break;
             default:
-                echo '<input type="text" name="' . $bab_input_name . '" value="' . doSpecial(@$row[$column]) . '" class="bab_pm_input">';
+                echo '<input type="text" name="' . $bab_input_name . '" value="' . doSpecial(empty($row[$column]) ? '' : $row[$column]) . '" class="bab_pm_input">';
                 break;
         }
 
@@ -486,7 +488,7 @@ function bab_pm_formsend()
         $form = gps('override_form');
 
         // ---- scrub the flag column for next time:
-        $result = safe_query("UPDATE $bab_pm_SubscribersTable SET flag = NULL");
+        $result = safe_query("UPDATE $bab_pm_SubscribersTable SET flag = ''");
 
         //time to fire off initialize
         // bab_pm_initialize_mail();
@@ -570,7 +572,7 @@ function bab_pm_subscribers()
         $lvars = array('page','sort','dir','crit','method');
         extract(gpsa($lvars));
 
-        $total = getCount('bab_pm_subscribers',"1");
+        $total = (int)getCount('bab_pm_subscribers',"1");
         echo '<fieldset id="bab_pm_total-lists"><legend><span class="bab_pm_underhed">Total Subscribers</span></legend><br />' . $total . '</fieldset>';
 
         // add a subscriber
@@ -635,7 +637,7 @@ EOSQL;
         $search_results = $total = getThing($q);
 
 
-        $limit = bab_pm_preferences('subscribers_per_page');
+        $limit = (int)bab_pm_preferences('subscribers_per_page');
 
         if (!$limit) {
             $limit = 20;
@@ -672,7 +674,7 @@ EOSQL;
                 bab_pm_column_head('Last Name', 'subscriberLastName', 'postmaster', 1, ''),
                 bab_pm_column_head('Email', 'subscriberEmail', 'postmaster', 1, ''),
                 bab_pm_column_head('Lists', 'subscriberLists', 'postmaster', 0, ''),
-                bab_pm_column_head(NULL),
+                bab_pm_column_head(''),
             '</tr>';
 
             while ($a = nextRow($gesh)) {
@@ -792,7 +794,7 @@ function bab_pm_lists()
                 bab_pm_list_column_head('Admin Email', 'listAdminEmail', 'postmaster', 1, ''),
                 hCell(gTxt('Description')),
                 hCell(gTxt('List Form')),
-                bab_pm_column_head(NULL),
+                bab_pm_column_head(''),
             '</tr>';
 
             while ($a = nextRow($gesh)) {
@@ -869,8 +871,6 @@ function bab_pm_import()
     $overwrite = ps('overwrite') == 'on' ? true : false;
 
     $file = $_FILES['thefile'];
-
-    @ini_set('auto_detect_line_endings', '1');
 
     $fh = fopen($file['tmp_name'], 'r');
     $skipped = array();
@@ -983,7 +983,7 @@ function bab_pm_export()
 
     $custom_fields = '';
 
-    for ($i = 1; $i < BAB_CUSTOM_FIELD_COUNT; $i++) {
+    for ($i = 1; $i <= BAB_CUSTOM_FIELD_COUNT; $i++) {
         $custom_fields .= "S.subscriberCustom{$i}, ";
     }
 
@@ -1136,7 +1136,7 @@ function bab_pm_initialize_mail()
     // no need to check radio (checked in eop)
     @session_start();
 
-    global $listAdminEmail, $headers, $mime_boundary, $bab_pm_PrefsTable, $bab_pm_SubscribersTable, $row, $rs; // $row (list), $rs (article) are global for bab_pm_data
+    global $listAdminEmail, $headers, $mime_boundary, $bab_pm_PrefsTable, $bab_pm_SubscribersTable, $row, $rs, $thisarticle; // $row (list), $rs (article) are global for bab_pm_data
 
     $bab_pm_radio = (!empty($_REQUEST['bab_pm_radio'])) ? gps('bab_pm_radio') : gps('radio');
 
@@ -1176,7 +1176,8 @@ function bab_pm_initialize_mail()
     $sendFrom = gps('sendFrom');
     $email_from = empty($sendFrom) ? $listAdminEmail : $sendFrom;
 
-    $subject = parse($$subjectLineSource);
+    $subLineSrc = empty($$subjectLineSource) ? '' : $$subjectLineSource;
+    $subject = parse($subLineSrc);
 
     // set TOTAL number of subscribers in list (for progress bar calculation)
     if (isset($listID)) {
@@ -1217,7 +1218,7 @@ EOSQL;
     }
 
     // set email template(s), so that only happens once
-    $listEmailForm = trim($listEmailForm);
+    $listEmailForm = trim(empty($listEmailForm) ? '' : $listEmailForm);
 
     if (!empty($listEmailForm)) {
         $theForm = fetch('Form','txp_form','name',"$listEmailForm");
@@ -1236,7 +1237,7 @@ Unsubscribe: <txp:bab_pm_unsubscribeLink />
 eop_form;
     }
 
-    //echo $template;
+    //dmp($template);
 
     // send all our initialized to bab_pm_bulk_mail
     bab_pm_bulk_mail($bab_pm_total, $bab_pm_radio, $subject, @$thisarticle, $template); // send all info to mail through function
@@ -1249,24 +1250,6 @@ function bab_pm_bulk_mail($bab_pm_total, $bab_pm_radio, $subject, $thisarticle, 
 {
     global $prefs, $production_status;
 
-    $usePhpMailer = false;
-    $mail = null;
-
-    if (class_exists('PHPMailer\PHPMailer\PHPMailer')) {
-        $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-
-        if ($production_status === 'debug') {
-            $mail->SMTPDebug  = 3;
-        } elseif ($production_status === 'testing') {
-            $mail->SMTPDebug  = 2;
-        }
-
-        // Bypass the fact that PHPMailer clashes with <txp:php>.
-        $mail::$validator = 'phpinternal';
-
-        $usePhpMailer = true;
-    }
-
     echo '<p class=bab_pm_subhed>BULK MAIL</p>';
     echo '<p>Currently mailing: ' . $subject . '</p>';
 
@@ -1276,9 +1259,10 @@ function bab_pm_bulk_mail($bab_pm_total, $bab_pm_radio, $subject, $thisarticle, 
     global $subscriberName, $subscriberFirstName, $subscriberLastName, $subscriberEmail, $subscriberLists, $txp_sections;
 
     $unsubscribe_url = trim($prefs[_bab_prefix_key('default_unsubscribe_url')]);
+    $subscribers = array();
 
     if (empty($unsubscribe_url)) {
-        $unsubscribe_url = trim($row['listUnsubscribeUrl']);
+        $unsubscribe_url = trim(empty($row['listUnsubscribeUrl']) ? '' : $row['listUnsubscribeUrl']);
     }
 
     for ($i = 1; $i <= BAB_CUSTOM_FIELD_COUNT; $i++) {
@@ -1287,17 +1271,21 @@ function bab_pm_bulk_mail($bab_pm_total, $bab_pm_radio, $subject, $thisarticle, 
     }
 
     $sep = IS_WIN ? "\r\n" : "\n";
+    $Section = $Body = $Excerpt = $Title = '';
+
+    if (!empty($rs)) {
+        extract($rs);
+    }
 
     // prep Skin, Title, Body and Excerpt
-    @extract($rs);
-    $skin = $txp_sections[$Section]['skin'];
-    parse(@$Title);
-    parse(@$Body);
-    $Body = str_replace("\r\n", "\n", @$Body);
+    $skin = empty($txp_sections[$Section]['skin']) ? '' : $txp_sections[$Section]['skin'];
+    parse($Title);
+    parse($Body);
+    $Body = str_replace("\r\n", "\n", $Body);
     $Body = str_replace("\r", "\n", $Body);
     $Body = str_replace("\n", $sep, $Body);
-    parse(@$Excerpt);
-    $Excerpt = str_replace("\r\n", "\n", @$Excerpt);
+    parse($Excerpt);
+    $Excerpt = str_replace("\r\n", "\n", $Excerpt);
     $Excerpt = str_replace("\r", "\n", $Excerpt);
     $Excerpt = str_replace("\n", $sep, $Excerpt);
     $smtp_from = get_pref('smtp_from');
@@ -1360,6 +1348,7 @@ status_report;
     }
 
     $i = 1; // set internal counter
+    $fromName = parse('<txp:site_name />');
 
     foreach ($subscribers as $subscriber) {
         if ($i <= $email_batch) {
@@ -1386,71 +1375,42 @@ status_report;
             $email = str_replace("\n", $sep, $email);
             callback_event_ref('mem_postmaster.message', 'html', 0, $template, $email);
 
-            $email = mb_convert_encoding($email, "HTML-ENTITIES", "UTF-8");
+            $email = mb_encode_numericentity(
+                htmlspecialchars_decode(
+                    htmlentities($email, ENT_NOQUOTES, 'UTF-8', false)
+                    , ENT_NOQUOTES
+                ), [0x80, 0x10FFFF, 0, ~0],
+                'UTF-8'
+            );
 
             $plain = parse(empty($template['text']) ? $template['combined'] : $template['text']);
             callback_event_ref('mem_postmaster.message', 'text', 0, $template, $plain);
 
-            if ($usePhpMailer) {
-                try {
-                    $smtp_host = get_pref('smtp_host');
-                    $smtp_user = get_pref('smtp_user');
-                    $smtp_pass = get_pref('smtp_pass');
-                    $smtp_port = get_pref('smtp_port');
+            try {
+                $message = Txp::get('\Textpattern\Mail\Compose')->getDefaultAdapter();
+                $message->to($subscriberEmail)
+                    ->subject($subject)
+                    ->body(array('plain' => $plain, 'html' => $email))
+                    ->from($headers['From'], $fromName);
 
-                    if ($smtp_host) {
-                        $mail->IsSMTP();
-                        $mail->SMTPAuth = true;
-                        $mail->Host = $smtp_host;
-                        $mail->Username = $smtp_user;
-                        $mail->Password = $smtp_pass;
-                        $mail->SMTPSecure = 'tls';
-                        $mail->Port = $smtp_port;
-                    }
-
-                    $mail->IsHTML(true);
-                    $mail->addAddress($subscriberEmail);
-                    $mail->Subject = $subject;
-                    $mail->Body    = $email;
-                    $mail->AltBody = $plain;
-
-                    if (is_valid_email($smtp_from)) {
-                        $mail->Sender = $smtp_from;
-                        $mail->addReplyTo($smtp_from, parse('<txp:site_name />'));
-                        $mail->setFrom($smtp_from, parse('<txp:site_name />'), false);
-                    } else {
-                        $mail->addReplyTo($headers['From'], parse('<txp:site_name />'));
-                        $mail->setFrom($headers['From'], parse('<txp:site_name />'));
-                    }
-
-                    $ret = $mail->send();
-
-                } catch (PHPMailer\PHPMailer\Exception $e) {
-                   echo $e->errorMessage();
-                } catch (\Exception $e) {
-                   echo $e->getMessage();
-                }
-
-                $mail->clearAddresses();
-                $mail->clearReplyTos();
-                $mail->clearAttachments();
-            } else {
-                $headerStr = '';
-                $message = parse($template['combined']);
-
-                foreach ($headers as $hkey => $hval) {
-                    $headerStr .= $hkey.': '.$hval.$sep;
-                }
-
-                $ret = mail($subscriberEmail, $subject, $message, $headerStr);
+                $ret = $message->send();
+            } catch (\Textpattern\Mail\Exception $e) {
+                $ret = false;
+            } catch (\PHPMailer\PHPMailer\Exception $e) {
+                $ret = false;
+            } catch (\Exception $e) {
+                $ret = false;
             }
 
             $i++; // ---- update internal counter
 
-            // mark address as "mailed"
-            $result = safe_update('bab_pm_subscribers', "flag = 'mailed'", "subscriberEmail='".doSlash($subscriberEmail)."'");
-
-            echo "<p>Mail sent to $subscriberEmail</p>";
+            if ($ret) {
+                // Mark address as "mailed".
+                $result = safe_update('bab_pm_subscribers', "flag = 'mailed'", "subscriberEmail='".doSlash($subscriberEmail)."'");
+                echo "<p>Mail sent to $subscriberEmail</p>";
+            } else {
+                echo "<p class='bab_pm_alerts'>Mail NOT sent to $subscriberEmail</p>";
+            }
         } else {
             break;
         }
@@ -1831,7 +1791,7 @@ function bab_pm_eop($evt, $stp)
 
     // ---- scrub the flag column for next time:
     if ($bab_pm_radio) {
-        $result = safe_query("UPDATE $bab_pm_SubscribersTable SET flag = NULL");
+        $result = safe_query("UPDATE $bab_pm_SubscribersTable SET flag = ''");
 
         $path = "?event=postmaster&step=initialize_mail&radio=$bab_pm_radio&list=$listToEmail&artID=$artID";
 
@@ -2358,7 +2318,7 @@ function bab_pm_preferences($what)
         'subscribers_delete'            => 'Deleted subscribers.',
         'subscribers_add_to_list'   => 'Selected subscribers added to list',
         'subscribers_remove_from_list'  => 'Selected subscribers removed from list',
-
+        'subscribers_per_page'         => 'Subscribers per page',
         'subscribers_delete_lists'  => 'Deleted selected lists',
         'subscribers_add_all_to_list'   => 'Add everyone to selected lists',
         'subscribers_remove_all_from_list'  => 'Removed everyone from selected lists',
@@ -2380,7 +2340,7 @@ function bab_pm_preferences($what)
 
     );
 
-    $result = @$lang[$what];
+    $result = empty($lang[$what]) ? '' : $lang[$what];
 
     if (!$result) {
         global $prefs;
@@ -2404,7 +2364,7 @@ function bab_pm_file_upload_form($label, $pophelp, $step, $id = '')
 
     $max_file_size = (intval($file_max_upload_size) == 0) ? '' : intval($file_max_upload_size);
 
-    $label_id = (@$label_id) ? $label_id : 'postmaster-upload';
+    $label_id = !empty($label_id) ? $label_id : 'postmaster-upload';
 
     return '<form method="post" enctype="multipart/form-data" action="index.php">'
         . '<div>'
@@ -2568,7 +2528,7 @@ function bab_pm_create_subscribers_list()
 {
     global $txpcfg, $bab_pm_PrefsTable , $bab_pm_SubscribersTable, $bab_pm_mapTable, $DB;
 
-    $lists_table = @getThings('describe `'.PFX.'bab_pm_subscribers_list`');
+    $lists_table = safe_exists('bab_pm_subscribers_list');
 
     if ($lists_table) {
         return;
@@ -2651,8 +2611,6 @@ function subscriberlist_searching_form($crit, $method)
         'lists' => gTxt('Subscriber List')
     );
 
-    $page_url = page_url(array());
-
     for ($i = 1; $i <= 10; $i++) {
         $field = 'subscriberCustom' . $i;
         $key = 'bab_pm-' . $field;
@@ -2665,7 +2623,7 @@ function subscriberlist_searching_form($crit, $method)
     $selection = selectInput('method', $methods, $method);
 
     $search_form = <<<search_form
-<form action="$page_url" method="POST" id="subscriber_edit_form" style="text-align:center;padding-bottom:10px;">
+<form method="POST" id="subscriber_edit_form" style="text-align:center;padding-bottom:10px;">
 Search by $selection : <input type="text" name="crit" value="$crit" class="edit" size="15">
 <input type="submit" value="Go" class="smallerbox">
 </form>
@@ -2690,11 +2648,10 @@ function listlist_searching_form($crit, $method)
     );
 
     $atts['type'] = 'request_uri';
-    $page_url = page_url($atts);
     $selection = selectInput('method', $methods, $method);
 
 $search_form = <<<search_form
-<form action="$page_url" method="POST" id="subscriber_edit_form" style="text-align:center;padding-bottom:10px;">
+<form method="POST" id="subscriber_edit_form" style="text-align:center;padding-bottom:10px;">
 Search by $selection : <input type="text" name="crit" value="$crit" class="edit" size="15">
 <input type="submit" value="Go" class="smallerbox">
 </form>
@@ -3025,6 +2982,7 @@ function deGlyph($text)
 // changed to try and remove white space on deglyphed text
     return trim($text);
 }
+
 
 # --- END PLUGIN CODE ---
 if (0) {
