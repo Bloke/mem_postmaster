@@ -2318,7 +2318,6 @@ function bab_pm_preferences($what)
         'subscribers_delete'            => 'Deleted subscribers.',
         'subscribers_add_to_list'   => 'Selected subscribers added to list',
         'subscribers_remove_from_list'  => 'Selected subscribers removed from list',
-        'subscribers_per_page'         => 'Subscribers per page',
         'subscribers_delete_lists'  => 'Deleted selected lists',
         'subscribers_add_all_to_list'   => 'Add everyone to selected lists',
         'subscribers_remove_all_from_list'  => 'Removed everyone from selected lists',
