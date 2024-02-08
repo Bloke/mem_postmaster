@@ -1348,7 +1348,7 @@ status_report;
     }
 
     $i = 1; // set internal counter
-    $fromName = parse('<txp:site_name />');
+    $siteName = parse('<txp:site_name />');
 
     foreach ($subscribers as $subscriber) {
         if ($i <= $email_batch) {
@@ -1386,14 +1386,20 @@ status_report;
             $plain = parse(empty($template['text']) ? $template['combined'] : $template['text']);
             callback_event_ref('mem_postmaster.message', 'text', 0, $template, $plain);
 
+            $fromInfo = bab_pm_get_from_rfc_email($headers['From']);
+
+            if (empty($fromInfo['name'])) {
+                $fromInfo['name'] = $siteName;
+            }
+
             try {
                 $message = Txp::get('\Textpattern\Mail\Compose')->getDefaultAdapter();
                 $message->to($subscriberEmail)
                     ->subject($subject)
                     ->body(array('plain' => $plain, 'html' => $email))
-                    ->from($headers['From'], $fromName);
-
+                    ->from($fromInfo['email'], $fromInfo['name']);
                 $ret = $message->send();
+
             } catch (\Textpattern\Mail\Exception $e) {
                 $ret = false;
             } catch (\PHPMailer\PHPMailer\Exception $e) {
@@ -2982,6 +2988,25 @@ function deGlyph($text)
     return trim($text);
 }
 
+// Extract email and name from a combined RFC email string.
+function bab_pm_get_from_rfc_email($rfc_email_string) {
+    $out = array('email' => '', 'name' => '');
+
+    $mailAddress = preg_match('/(?:<)(.+)(?:>)$/', $rfc_email_string, $matches);
+
+    if (!empty($matches[1])) {
+        $out['email'] = $matches[1];
+    }
+
+    $name = preg_match('/[\w\s]+/', $rfc_email_string, $matches);
+
+    if (!empty($matches[0])) {
+        $matches[0] = trim($matches[0]);
+        $out['name'] = $matches[0];
+    }
+
+    return $out;
+}
 
 # --- END PLUGIN CODE ---
 if (0) {
