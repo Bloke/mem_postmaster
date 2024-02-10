@@ -1265,6 +1265,8 @@ function bab_pm_bulk_mail($bab_pm_total, $bab_pm_radio, $subject, $thisarticle, 
         $unsubscribe_url = trim(empty($row['listUnsubscribeUrl']) ? '' : $row['listUnsubscribeUrl']);
     }
 
+    $unsubscribe_url = parse($unsubscribe_url);
+
     for ($i = 1; $i <= BAB_CUSTOM_FIELD_COUNT; $i++) {
         $n = "subscriberCustom{$i}";
         global $$n; // required (extracted in foreach, then sent to bab_pm_data)
@@ -1351,6 +1353,8 @@ status_report;
     $siteName = parse('<txp:site_name />');
 
     foreach ($subscribers as $subscriber) {
+        $err = '';
+
         if ($i <= $email_batch) {
             @extract($subscriber);
 
@@ -1366,6 +1370,11 @@ status_report;
                 $bab_pm_unsubscribeLink = $url . (strrchr($url, '?') ? '&' : '?') . 'uid=' . urlencode($unsubscribeID);
             } else {
                 $bab_pm_unsubscribeLink = '';
+            }
+
+            if ($bab_pm_unsubscribeLink) {
+                $headers['List-Unsubscribe'] = $bab_pm_unsubscribeLink;
+                $headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
             }
 
             // all necessary variables now defined, parse email template
@@ -1394,17 +1403,28 @@ status_report;
 
             try {
                 $message = Txp::get('\Textpattern\Mail\Compose')->getDefaultAdapter();
+
+                if (is_array($headers)) {
+                    foreach ($headers as $hkey => $hval) {
+                        $message->header($hkey, $hval);
+                    }
+                }
+
                 $message->to($subscriberEmail)
                     ->subject($subject)
                     ->body(array('plain' => $plain, 'html' => $email))
                     ->from($fromInfo['email'], $fromInfo['name']);
+
                 $ret = $message->send();
 
             } catch (\Textpattern\Mail\Exception $e) {
+                $err = $e->getMessage();
                 $ret = false;
             } catch (\PHPMailer\PHPMailer\Exception $e) {
+                $err = $e->getMessage();
                 $ret = false;
             } catch (\Exception $e) {
+                $err = $e->getMessage();
                 $ret = false;
             }
 
@@ -1415,7 +1435,7 @@ status_report;
                 $result = safe_update('bab_pm_subscribers', "flag = 'mailed'", "subscriberEmail='".doSlash($subscriberEmail)."'");
                 echo "<p>Mail sent to $subscriberEmail</p>";
             } else {
-                echo "<p class='bab_pm_alerts'>Mail NOT sent to $subscriberEmail</p>";
+                echo "<p class='bab_pm_alerts'>Mail NOT sent to $subscriberEmail. Reason: $err</p>";
             }
         } else {
             break;
@@ -2996,6 +3016,8 @@ function bab_pm_get_from_rfc_email($rfc_email_string) {
 
     if (!empty($matches[1])) {
         $out['email'] = $matches[1];
+    } else {
+        $out['email'] = $rfc_email_string;
     }
 
     $name = preg_match('/[\w\s]+/', $rfc_email_string, $matches);
