@@ -1206,7 +1206,7 @@ EOSQL;
     );
 
     // Additional headers required if using regular mail.
-    if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+    if (!get_pref('enhanced_email')) {
        $headers['MIME-Version'] = '1.0';
        $headers['Content-Transfer-Encoding'] = '8bit';
        $headers['Content-Type'] = 'text/plain';
@@ -2872,7 +2872,7 @@ function bab_pm_data($atts)
 function bab_pm_mime($atts)
 {
     // If you're coming here, that means it's HTML -- no need to check.
-    global $headers, $mime_boundary, $listAdminEmail;
+    global $headers, $mime_boundary;
 
     // Determine which mime type is required.
     extract(lAtts(array(
